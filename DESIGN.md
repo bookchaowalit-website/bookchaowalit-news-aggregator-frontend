@@ -13,18 +13,18 @@ colors:
   gold: "#9a7029"
 typography:
   display:
-    fontFamily: "Geist, Arial, sans-serif"
+    fontFamily: "Newsreader, Georgia, serif"
     fontSize: "clamp(3.4rem, 8vw, 6.5rem)"
     fontWeight: 560
     lineHeight: 0.88
     letterSpacing: "-0.085em"
   body:
-    fontFamily: "Geist, Arial, sans-serif"
+    fontFamily: "Newsreader, Georgia, serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.65
   data:
-    fontFamily: "Geist Mono, SFMono-Regular, Consolas, monospace"
+    fontFamily: "Source Code Pro, SFMono-Regular, Consolas, monospace"
     fontSize: "0.62rem"
     fontWeight: 400
     lineHeight: 1.4
