@@ -1,136 +1,221 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-function Shell({
-  title,
-  subtitle,
-  badge = "Portfolio demo · local-only",
-  children,
-}: {
+type Category = "Signals" | "Products" | "Research" | "Practice";
+type Filter = "All" | Category;
+
+type Story = {
+  id: string;
+  category: Category;
+  source: string;
   title: string;
-  subtitle: string;
-  badge?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-100">
-      <div className="mx-auto max-w-6xl px-4 py-10">
-        <header className="mb-8">
-          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">{badge}</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight">{title}</h1>
-          <p className="mt-2 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">{subtitle}</p>
-        </header>
-        {children}
-        <footer className="mt-10 border-t border-zinc-200 pt-4 text-xs text-zinc-500 dark:border-zinc-800">
-          Honest demo: no multi-tenant backend. State (if any) stays in this browser.
-        </footer>
-      </div>
-    </div>
-  );
-}
+  summary: string;
+  why: string;
+  time: string;
+  readMinutes: number;
+  read: boolean;
+  saved: boolean;
+};
 
-function Button({
-  children,
-  onClick,
-  variant = "primary",
-  disabled,
-  type = "button",
-  className = "",
-}: {
-  children: ReactNode;
-  onClick?: () => void;
-  variant?: "primary" | "secondary" | "ghost" | "danger";
-  disabled?: boolean;
-  type?: "button" | "submit";
-  className?: string;
-}) {
-  const base =
-    "inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition disabled:opacity-50 " +
-    className;
-  const styles =
-    variant === "primary"
-      ? "bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900"
-      : variant === "secondary"
-        ? "bg-white text-zinc-900 ring-1 ring-zinc-200 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700"
-        : variant === "danger"
-          ? "bg-red-600 text-white hover:bg-red-500"
-          : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900";
-  return (
-    <button type={type} disabled={disabled} onClick={onClick} className={`${base} ${styles}`}>
-      {children}
-    </button>
-  );
-}
+const CATEGORIES: Category[] = ["Signals", "Products", "Research", "Practice"];
 
-const inputClass =
-  "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950";
+const SEED: Story[] = [
+  {
+    id: "small-models",
+    category: "Signals",
+    source: "FIELD NOTE / COMPUTING",
+    title: "Small models are changing what a useful tool can be",
+    summary: "When capability becomes cheap enough to sit inside the workflow, the product question moves from access to judgment.",
+    why: "Useful for deciding where an AI feature should stay quiet, local, and inspectable.",
+    time: "08:40",
+    readMinutes: 4,
+    read: false,
+    saved: true,
+  },
+  {
+    id: "calm-software",
+    category: "Products",
+    source: "DESIGN DESK / INTERFACES",
+    title: "The best interface may be the one that leaves room to think",
+    summary: "A product can communicate confidence through pacing, hierarchy, and the restraint to keep a secondary action secondary.",
+    why: "A useful counterweight when a portfolio surface starts accumulating features faster than meaning.",
+    time: "YESTERDAY",
+    readMinutes: 6,
+    read: true,
+    saved: false,
+  },
+  {
+    id: "retrieval",
+    category: "Research",
+    source: "RESEARCH LOG / KNOWLEDGE",
+    title: "Retrieval is a product decision, not a search box",
+    summary: "The shape of a memory system determines which questions feel askable and which context quietly disappears.",
+    why: "Worth reading before adding another index, tag, or filter to a personal knowledge tool.",
+    time: "18 AUG",
+    readMinutes: 5,
+    read: false,
+    saved: false,
+  },
+  {
+    id: "shipping",
+    category: "Practice",
+    source: "STUDIO MEMO / SOLO WORK",
+    title: "Shipping small is a way to protect attention",
+    summary: "A narrow release creates a real surface to learn from; a perfect plan mostly creates another place to hide.",
+    why: "A reminder for choosing the next experiment without exposing the whole operating system.",
+    time: "16 AUG",
+    readMinutes: 3,
+    read: false,
+    saved: false,
+  },
+  {
+    id: "interfaces",
+    category: "Products",
+    source: "OBSERVATION / WEB",
+    title: "A page can feel fast before it is technically fast",
+    summary: "Clear anticipation, stable layout, and a visible first answer reduce the feeling of waiting more than motion alone.",
+    why: "Useful when tuning page transitions and deciding what should appear before a route settles.",
+    time: "12 AUG",
+    readMinutes: 4,
+    read: false,
+    saved: false,
+  },
+];
 
 function useLocalStorage<T>(key: string, initial: T) {
   const [value, setValue] = useState<T>(initial);
   const [ready, setReady] = useState(false);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(key);
-      if (raw != null) setValue(JSON.parse(raw) as T);
+      // Browser storage is external state; this read intentionally follows hydration.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (raw) setValue(JSON.parse(raw) as T);
     } catch {
-      /* ignore */
+      // Keep the sample edition if storage is unavailable.
     }
     setReady(true);
   }, [key]);
+
   useEffect(() => {
-    if (!ready) return;
-    localStorage.setItem(key, JSON.stringify(value));
+    if (ready) localStorage.setItem(key, JSON.stringify(value));
   }, [key, value, ready]);
+
   return [value, setValue] as const;
 }
 
-function uid() {
-  return crypto.randomUUID();
-}
-
-async function copyText(text: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-
-type Item = { id: string; title: string; category: string; summary: string; meta?: string };
-const ITEMS: Item[] = [{"id": "1", "title": "Edge runtimes expand", "category": "Web", "summary": "Sample headline.", "meta": "Demo"}];
-const CATS = ["AI", "Web"];
-
 export default function Home() {
-  const [q, setQ] = useState("");
-  const [cat, setCat] = useState("All");
-  const list = ITEMS.filter(
-    (i) =>
-      (cat === "All" || i.category === cat) &&
-      (i.title + i.summary + i.category).toLowerCase().includes(q.toLowerCase())
-  );
+  const [stories, setStories] = useLocalStorage<Story[]>("news-desk-v2", SEED);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<Filter>("All");
+  const [selectedId, setSelectedId] = useState(SEED[0]?.id ?? "");
+  const [notice, setNotice] = useState("");
+
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return stories.filter((story) => {
+      const matchesFilter = filter === "All" || story.category === filter;
+      const matchesQuery = !needle || `${story.title} ${story.summary} ${story.source} ${story.category}`.toLowerCase().includes(needle);
+      return matchesFilter && matchesQuery;
+    });
+  }, [filter, query, stories]);
+
+  const selected = stories.find((story) => story.id === selectedId) ?? visible[0] ?? stories[0];
+  const unreadCount = stories.filter((story) => !story.read).length;
+  const savedCount = stories.filter((story) => story.saved).length;
+
+  function updateStory(id: string, changes: Partial<Story>, message: string) {
+    setStories((current) => current.map((story) => story.id === id ? { ...story, ...changes } : story));
+    setNotice(message);
+  }
+
   return (
-    <Shell title="News Aggregator" subtitle="Headline board (static sample).">
-      <div className="mb-4 flex flex-wrap gap-2">
-        <input className={`${inputClass} max-w-sm`} placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} />
-        {["All", ...CATS].map((c) => (
-          <Button key={c} variant={cat === c ? "primary" : "secondary"} onClick={() => setCat(c)}>
-            {c}
-          </Button>
-        ))}
+    <main className="news-desk">
+      <div className="desk-frame">
+        <header className="desk-header">
+          <div className="desk-mark"><span className="mark-rule" aria-hidden="true" />NEWS DESK</div>
+          <p>SAMPLE EDITION · PRIVATE READING QUEUE</p>
+        </header>
+
+        <section className="desk-masthead" aria-labelledby="page-title">
+          <div>
+            <h1 id="page-title">What deserves a closer look?</h1>
+            <p>A small briefing for the moment between noticing a headline and deciding whether it belongs in your day.</p>
+          </div>
+          <div className="edition-stamp">
+            <span>EDITION 01</span>
+            <strong>23 AUG<br />2026</strong>
+            <span>CURATED SAMPLE · NOT LIVE NEWS</span>
+          </div>
+        </section>
+
+        <section className="desk-body" aria-label="News reading desk">
+          <aside className="desk-sidebar">
+            <div className="sidebar-block">
+              <p className="label">READING QUEUE</p>
+              <div className="queue-line"><span>Unread</span><strong>{unreadCount.toString().padStart(2, "0")}</strong></div>
+              <div className="queue-line"><span>Saved for later</span><strong>{savedCount.toString().padStart(2, "0")}</strong></div>
+            </div>
+            <div className="sidebar-block beat-block">
+              <p className="label">FILTER BY BEAT</p>
+              <div className="beat-list" role="group" aria-label="Filter stories by beat">
+                {(["All", ...CATEGORIES] as const).map((item) => (
+                  <button key={item} type="button" aria-pressed={filter === item} onClick={() => setFilter(item)}>
+                    <span>{item}</span><small>{item === "All" ? stories.length : stories.filter((story) => story.category === item).length}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="sidebar-note">This desk contains five deterministic sample notes. There is no feed connection behind it.</p>
+          </aside>
+
+          <div className="desk-reading">
+            <div className="reading-tools">
+              <label className="search-line">
+                <span>SEARCH THE EDITION</span>
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Headline, source, or beat" />
+              </label>
+              <span className="result-count">{visible.length} OF {stories.length} NOTES</span>
+            </div>
+
+            {selected && (
+              <article className="lead-story" aria-labelledby="story-title">
+                <div className="story-kicker"><span>{selected.category}</span><span>{selected.source}</span></div>
+                <h2 id="story-title">{selected.title}</h2>
+                <p className="lead-summary">{selected.summary}</p>
+                <div className="why-read"><span className="label">WHY READ IT</span><p>{selected.why}</p></div>
+                <div className="story-actions">
+                  <button type="button" className="primary-action" aria-pressed={selected.read} onClick={() => updateStory(selected.id, { read: !selected.read }, selected.read ? "Marked unread." : "Marked read for this browser.")}>{selected.read ? "Mark unread" : "Mark as read"}</button>
+                  <button type="button" className="secondary-action" aria-pressed={selected.saved} onClick={() => updateStory(selected.id, { saved: !selected.saved }, selected.saved ? "Removed from saved notes." : "Saved for later in this browser.")}>{selected.saved ? "Remove saved note" : "Save for later"}</button>
+                  <span className="story-time">{selected.readMinutes} MIN READ · {selected.time}</span>
+                </div>
+                <p className="story-notice" role="status" aria-live="polite">{notice}</p>
+              </article>
+            )}
+
+            <div className="story-list-heading"><p className="label">THE REST OF THE EDITION</p><span>Select a row to change the reading</span></div>
+            {visible.length > 0 ? (
+              <ol className="story-list">
+                {visible.map((story) => (
+                  <li key={story.id}>
+                    <button type="button" className={`story-row${selected?.id === story.id ? " is-selected" : ""}`} onClick={() => { setSelectedId(story.id); setNotice(""); }}>
+                      <span className="story-row-index">{story.read ? "READ" : "NEW"}</span>
+                      <span className="story-row-main"><strong>{story.title}</strong><span>{story.category} · {story.source}</span></span>
+                      <span className="story-row-end"><span>{story.time}</span><span className={`saved-mark${story.saved ? " is-saved" : ""}`} aria-hidden="true" /></span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <div className="empty-desk"><strong>No story in this cut.</strong><span>Try another beat or clear the search.</span></div>
+            )}
+          </div>
+        </section>
+
+        <footer className="desk-footer"><span>NEWS DESK · EDITION 01</span><span>Context before click. Sample content, plainly labelled.</span></footer>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {list.map((i) => (
-          <article key={i.id} className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-            <div className="text-xs uppercase tracking-wide text-zinc-500">{i.category}</div>
-            <h2 className="mt-1 font-medium">{i.title}</h2>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{i.summary}</p>
-            {i.meta ? <p className="mt-3 text-xs text-zinc-500">{i.meta}</p> : null}
-          </article>
-        ))}
-      </div>
-    </Shell>
+    </main>
   );
 }

@@ -1,19 +1,19 @@
-# News Aggregator
+# News Desk
 
-Headline board (static sample).
+A small, honest reading queue for deciding what deserves a closer look.
 
-## Features
-- Search
-- Category filter
+## What it does
 
-## Limitations
-- Static demo content
+- Presents five deterministic sample stories as a compact briefing.
+- Filters by beat and searches headline/source/context.
+- Selects a lead reading, marks it read, and saves it for later in this browser.
+- Labels itself clearly: there is no live feed, RSS/API connection, account, or shared queue.
 
 ## Run
+
 ```bash
 npm install
 npm run dev
 ```
 
-## Honesty
-Portfolio demo. Not multi-tenant SaaS. Prefer local-only state over fake production claims.
+Open `http://localhost:3000`.
